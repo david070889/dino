@@ -266,17 +266,17 @@ Argument SNAKE-BUFFER is the name of the buffer."
   (when (zerop (dino-final-x-velocity))
     (push '(1 0) dino-velocity-queue)))
 
-(defun snake-move-up ()
+(defun dino-move-up ()
   "Make the snake move up."
-  (interactive nil snake-mode)
-  (when (zerop (snake-final-y-velocity))
-    (push '(0 -1) snake-velocity-queue)))
+  (interactive nil dino-mode)
+  (when (zerop (dino-final-y-velocity))
+    (push '(0 -1) dino-velocity-queue)))
 
-(defun snake-move-down ()
+(defun dino-move-down ()
   "Make the snake move down."
-  (interactive nil snake-mode)
-  (when (zerop (snake-final-y-velocity))
-    (push '(0 1) snake-velocity-queue)))
+  (interactive nil dino-mode)
+  (when (zerop (dino-final-y-velocity))
+    (push '(0 1) dino-velocity-queue)))
 
 (defun dino-end-game ()
   "Terminate the current game."
