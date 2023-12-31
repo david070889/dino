@@ -165,5 +165,183 @@
       (gamegrid-set-cell (+ dino-score-x x)
 			 dino-score-y
 			 (aref string x)))))
+(defun dino-init-buffer ()
+  (gamegrid-init-buffer dino-buffer-width
+			dino-buffer-height
+			dino-space)
+  (let ((buffer-read-only nil))
+    (dotimes (y dino-height)
+      (dotimes (x dino-width)
+        (gamegrid-set-cell x y dino-border)))
+    (cl-loop for y from 1 to (- dino-height 2) do
+             (cl-loop for x from 1 to (- dino-width 2) do
+                      (gamegrid-set-cell x y dino-blank)))))
+(defun dino-reset-game ()
+  (gamegrid-kill-timer)
+  (dino-init-buffer)
+  (setq dino-length		dino-initial-length
+	dino-velocity-x	dino-initial-velocity-x
+	dino-velocity-y	dino-initial-velocity-y
+	dino-positions		nil
+	dino-score		0
+	dino-paused		nil
+	dino-moved-p           nil
+	dino-velocity-queue    nil)
+  (let ((x dino-initial-x)
+	(y dino-initial-y))
+    (dotimes (_ dino-length)
+      (gamegrid-set-cell x y dino-dino)
+      (setq dino-positions (cons (vector x y) dino-positions))
+      (cl-incf x dino-velocity-x)
+      (cl-incf y dino-velocity-y)))
+  (dino-update-score))
+
+(defun dino-set-dot ()
+  (let ((x (random dino-width))
+	(y (random dino-height)))
+    (while (not (= (gamegrid-get-cell x y) dino-blank))
+      (setq x (random dino-width))
+      (setq y (random dino-height)))
+    (gamegrid-set-cell x y dino-dot)))
+
+(defun dino-update-game (dino-buffer)
+  "Called on each clock tick.
+Advances the snake one square, testing for collision.
+Argument SNAKE-BUFFER is the name of the buffer."
+  (when (and (not dino-paused)
+	     (eq (current-buffer) dino-buffer))
+    (dino-update-velocity)
+    (let* ((pos (car dino-positions))
+	   (x (+ (aref pos 0) dino-velocity-x))
+	   (y (+ (aref pos 1) dino-velocity-y))
+	   (c (gamegrid-get-cell x y)))
+      (if (or (= c dino-border)
+	      (= c dino-dino))
+	  (dino-end-game)
+	(cond ((= c dino-dot)
+	       (cl-incf dino-length)
+	       (cl-incf dino-score)
+	       (dino-update-score)
+	       (dino-set-dot))
+	      (t
+	       (let* ((last-cons (nthcdr (- dino-length 2)
+					 dino-positions))
+		      (tail-pos (cadr last-cons))
+		      (x0 (aref tail-pos 0))
+		      (y0 (aref tail-pos 1)))
+		 (gamegrid-set-cell x0 y0 dino-blank)
+		 (setcdr last-cons nil))))
+	(gamegrid-set-cell x y dino-dino)
+	(setq dino-positions
+	      (cons (vector x y) dino-positions))
+	(setq dino-moved-p nil)))))
+
+(defun dino-update-velocity ()
+  (unless dino-moved-p
+    (if dino-velocity-queue
+	(let ((new-vel (car (last dino-velocity-queue))))
+	  (setq dino-velocity-x (car new-vel)
+		dino-velocity-y (cadr new-vel))
+	  (setq dino-velocity-queue
+		(nreverse (cdr (nreverse dino-velocity-queue))))))
+    (setq dino-moved-p t)))
+
+(defun dino-final-x-velocity ()
+  (or (caar dino-velocity-queue)
+      dino-velocity-x))
+
+(defun dino-final-y-velocity ()
+  (or (cadr (car dino-velocity-queue))
+      dino-velocity-y))
+
+(defun dino-move-left ()
+  "Make the snake move left."
+  (interactive nil dino-mode)
+  (when (zerop (dino-final-x-velocity))
+    (push '(-1 0) dino-velocity-queue)))
+
+(defun dino-move-right ()
+  "Make the snake move right."
+  (interactive nil dino-mode)
+  (when (zerop (dino-final-x-velocity))
+    (push '(1 0) dino-velocity-queue)))
+
+(defun snake-move-up ()
+  "Make the snake move up."
+  (interactive nil snake-mode)
+  (when (zerop (snake-final-y-velocity))
+    (push '(0 -1) snake-velocity-queue)))
+
+(defun snake-move-down ()
+  "Make the snake move down."
+  (interactive nil snake-mode)
+  (when (zerop (snake-final-y-velocity))
+    (push '(0 1) snake-velocity-queue)))
+
+(defun dino-end-game ()
+  "Terminate the current game."
+  (interactive nil dino-mode)
+  (gamegrid-kill-timer)
+  (use-local-map dino-null-map)
+  (gamegrid-add-score dino-score-file dino-score))
+
+(defun dino-start-game ()
+  "Start a new game of Snake."
+  (interactive nil dino-mode)
+  (dino-reset-game)
+  (dino-set-dot)
+  (use-local-map dino-mode-map)
+  (gamegrid-start-timer dino-tick-period 'dino-update-game))
+
+(defun dino-pause-game ()
+  "Pause (or resume) the current game."
+  (interactive nil dino-mode)
+  (setq dino-paused (not dino-paused))
+  (message (and dino-paused "Game paused (press p to resume)")))
+
+(defun dino-active-p ()
+  (eq (current-local-map) dino-mode-map))
+
+(put 'dino-mode 'mode-class 'special)
+
+(define-derived-mode dino-mode special-mode "Dino"
+  "A mode for playing Snake."
+  :interactive nil
+
+  (add-hook 'kill-buffer-hook 'gamegrid-kill-timer nil t)
+
+  (use-local-map dino-null-map)
+
+  (setq gamegrid-use-glyphs dino-use-glyphs-flag)
+  (setq gamegrid-use-color dino-use-color-flag)
+
+  (gamegrid-init (dino-display-options)))
+
+;;;###autoload
+(defun dino ()
+  "Play the Snake game.
+Move the snake around without colliding with its tail or with the border.
+
+Eating dots causes the snake to get longer.
+
+Snake mode keybindings:
+   \\<snake-mode-map>
+\\[snake-start-game]	Starts a new game of Snake
+\\[snake-end-game]	Terminates the current game
+\\[snake-pause-game]	Pauses (or resumes) the current game
+\\[snake-move-left]	Makes the snake move left
+\\[snake-move-right]	Makes the snake move right
+\\[snake-move-up]	Makes the snake move up
+\\[snake-move-down]	Makes the snake move down"
+  (interactive)
+
+  (switch-to-buffer dino-buffer-name)
+  (gamegrid-kill-timer)
+  (dino-mode)
+  (dino-start-game))
+
+(provide 'dino)
+
+;;; snake.el ends here
 
 
