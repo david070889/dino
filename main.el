@@ -49,7 +49,7 @@
 (defvar dino-score-x 0
   "X position of score.")
 
-(defvar dino-score-y snake-height
+(defvar dino-score-y dino-height
   "Y position of score.")
 
 (defvar dino-score-file "dino-scores"
@@ -64,7 +64,7 @@
     (((glyph color-x) [0 0 0])
      (color-tty "black"))))
 
-(defvar dino-snake-options
+(defvar dino-dino-options
   '(((glyph colorize)
      (emacs-tty ?O)
      (t ?\040))
@@ -101,7 +101,7 @@
 ;; ;;;;;;;;;;;;; constants ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst dino-blank	0)
-(defconst dino-snake	1)
+(defconst dino-dino	1)
 (defconst dino-dot	2)
 (defconst dino-border	3)
 (defconst dino-space	4)
@@ -134,9 +134,9 @@
   "C-p"     #'dino-move-up
   "C-n"     #'dino-move-down)
 
-(defvar-keymap snake-null-map
+(defvar-keymap dino-null-map
   :doc "Keymap for finished Snake games."
-  :name 'snake-null-map
+  :name 'dino-null-map
   "n"       #'dino-start-game
   "q"       #'quit-window)
 
@@ -146,8 +146,8 @@
       (aset options c
 	    (cond ((= c dino-blank)
 		   dino-blank-options)
-                  ((= c dino-snake)
-		   dino-snake-options)
+                  ((= c dino-dino)
+		   dino-dino-options)
                   ((= c dino-dot)
 		   dino-dot-options)
                   ((= c dino-border)
