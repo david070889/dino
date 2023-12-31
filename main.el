@@ -13,16 +13,16 @@
   "Name used for Snake buffer.")
 
 
-(defvar dino-buffer-width 100
+(defvar dino-buffer-width 50
   "Width of used portion of buffer.")
 
-(defvar dino-buffer-height 33
+(defvar dino-buffer-height 20
   "Height of used portion of buffer.")
 
-(defvar dino-width 100
+(defvar dino-width 50
   "Width of playing area.")
 
-(defvar dino-height 33
+(defvar dino-height 20
   "Height of playing area.")
 
 (defvar dino-initial-length 5
