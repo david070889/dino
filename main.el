@@ -16,7 +16,7 @@
 (defvar dino-buffer-width 50
   "Width of used portion of buffer.")
 
-(defvar dino-buffer-height 20
+(defvar dino-buffer-height 22
   "Height of used portion of buffer.")
 
 (defvar dino-width 50
